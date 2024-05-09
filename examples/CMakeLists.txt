@@ -114,3 +114,6 @@ if (WHISPER_SDL2)
     add_subdirectory(wchess)
     set_target_properties(wchess PROPERTIES FOLDER "examples")
 endif (WHISPER_SDL2)
+
+add_subdirectory(whisperrust)
+set_target_properties(whisperrust PROPERTIES FOLDER "examples")

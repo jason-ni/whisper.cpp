@@ -635,6 +635,33 @@ bool is_wav_buffer(const std::string buf) {
     return true;
 }
 
+bool read_pcm_file(const std::string & fname, std::vector<float>& pcmf32) {
+    printf("%s: loading PCM file '%s'\n", __func__, fname.c_str());
+    std::vector<uint8_t> wav_data; // used for pipe input from stdin
+
+    uint8_t buf[16000];
+    std::fstream file(fname, std::ios::in | std::ios::binary);
+    while (true)
+    {
+        const size_t n = file.readsome(reinterpret_cast<char*>(buf), sizeof(buf));
+        if (n == 0) {
+            break;
+        }
+        wav_data.insert(wav_data.end(), buf, buf + n);
+    }
+    file.close();
+
+    if (wav_data.empty()) {
+        return false;
+    }
+    for (size_t i = 0; i < wav_data.size(); i += 2) {
+        const int16_t sample = (int16_t ) wav_data[i]  | (wav_data[i+1] << 8 );
+        pcmf32.push_back(float(sample)/32768.0f);
+    }
+
+    return true;
+}
+
 bool read_wav(const std::string & fname, std::vector<float>& pcmf32, std::vector<std::vector<float>>& pcmf32s, bool stereo) {
     drwav wav;
     std::vector<uint8_t> wav_data; // used for pipe input from stdin

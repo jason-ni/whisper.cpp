@@ -60,3 +60,9 @@ cmake-build-debug/
 .cxx/
 .gradle/
 local.properties
+
+target
+*.mp3
+*.wav
+cmake-build*
+Cargo.lock

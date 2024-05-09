@@ -57,7 +57,7 @@ option(WHISPER_SANITIZE_UNDEFINED     "whisper: enable undefined sanitizer" OFF)
 option(WHISPER_BUILD_TESTS            "whisper: build tests"    ${WHISPER_STANDALONE})
 option(WHISPER_BUILD_EXAMPLES         "whisper: build examples" ${WHISPER_STANDALONE})
 
-option(WHISPER_SDL2                   "whisper: support for libSDL2" OFF)
+option(WHISPER_SDL2                   "whisper: support for libSDL2" ON)
 
 option(WHISPER_NO_AVX                 "whisper: disable AVX"         OFF)
 option(WHISPER_NO_AVX2                "whisper: disable AVX2"        OFF)
@@ -81,7 +81,7 @@ else()
     option(WHISPER_BLAS_VENDOR           "whisper: BLAS library vendor"                       Generic)
     option(WHISPER_OPENBLAS              "whisper: prefer OpenBLAS"                           OFF)
     option(WHISPER_OPENBLAS_INTERFACE64  "whisper: use OpenBLAS w/ 64-bit interface"          OFF)
-    option(WHISPER_CUDA                  "whisper: support for CUDA"                          OFF)
+    option(WHISPER_CUDA                  "whisper: support for CUDA"                          ON)
     option(WHISPER_CUBLAS                "whisper: support for CUDA (deprecated)"             OFF)
     option(WHISPER_HIPBLAS               "whisper: support for hipBLAS"                       OFF)
     option(WHISPER_CLBLAST               "whisper: use CLBlast"                               OFF)
@@ -113,6 +113,20 @@ endif()
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffast-math")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+
+
+# set rust CXX build
+set(CARGO_MANIFEST ${CMAKE_SOURCE_DIR}/Cargo.toml)
+set(CARGO_TARGET_DIR ${CMAKE_SOURCE_DIR}/target)
+file(GLOB_RECURSE RUST_CODE_FILE ${CMAKE_SOURCE_DIR}/rust/*/*.rs)
+set(WHISPER_RUST_LIB_FILE ${RUST_CODE_FILE}
+        ${CMAKE_SOURCE_DIR}/rust/whisper_wrapper/whisper_wrapper.cpp
+        ${CMAKE_SOURCE_DIR}/rust/whisper_wrapper/whisper_wrapper.h)
+set(WHISPER_RUST_BRIDGE_CPP ${CARGO_TARGET_DIR}/cxxbridge/whispercpp/rust/src/lib.rs.cc)
+set(WHISPER_RUST_LIB ${CARGO_TARGET_DIR}/debug/${CMAKE_STATIC_LIBRARY_PREFIX}whispercpp${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(FFMPEG_DIR "/home/jason/shotcut/Shotcut/Shotcut.app/lib")
+
+link_directories(${FFMPEG_DIR}/lib)
 
 # dependencies
 

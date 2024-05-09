@@ -1,0 +1,24 @@
+[package]
+name = "whispercpp"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+path = "rust/src/lib.rs"
+
+[dependencies]
+cxx = "1.0"
+bytemuck = "1.15.0"
+ffmpeg-next = "6.1.0"
+ffmpeg-sys-next = "6.1.0"
+thiserror = "1.0"
+anyhow = "1.0"
+log = "0.4"
+env_logger = "0.11.3"
+chrono = "0.4.38"
+pretty-hex = "0.4.1"
+once_cell = "1.19.0"
+
+[build-dependencies]
+cxx-build = "1.0"
