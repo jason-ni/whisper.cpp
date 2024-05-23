@@ -12,6 +12,11 @@ use crate::rb::{RB, RbConsumer, SampleRange};
 mod ffi {
 
     extern "Rust" {
+
+        type SenderWrapper;
+
+        fn send_text(sender: &SenderWrapper, text: String);
+
         fn run_transcript(audio_file: String);
     }
 
@@ -20,11 +25,26 @@ mod ffi {
 
         type WhisperWrapper;
 
-        pub unsafe fn infer_buffer(&self, buffer: *const f32, buffer_size: usize) -> i32;
+        pub unsafe fn infer_buffer(&self, sender: &SenderWrapper, buffer: *const f32, buffer_size: usize) -> i32;
         pub unsafe fn get_segment_count(&self) -> i32;
         pub unsafe fn create_whisper_wrapper(model_path: &str) -> UniquePtr<WhisperWrapper>;
     }
 }
+
+pub struct SenderWrapper {
+    sender: std::sync::mpsc::SyncSender<String>,
+}
+
+impl SenderWrapper {
+    pub fn new(sender: std::sync::mpsc::SyncSender<String>) -> Self {
+        Self { sender }
+    }
+}
+
+pub fn send_text(sender: &SenderWrapper, text: String) {
+    sender.sender.send(text).unwrap();
+}
+
 
 pub fn run_transcript(audio_file: String) {
     let logger_name = "rust_wrapper";
@@ -41,6 +61,9 @@ pub fn run_transcript(audio_file: String) {
     let rb_obj = SpscRb::new(16000*120);
     let prod = rb_obj.producer();
     let cons = rb_obj.consumer();
+
+    let (text_tx, text_rx) = std::sync::mpsc::sync_channel(10);
+
     let t1 = std::thread::spawn(move || {
         match process_audio(audio_file, prod) {
             Ok(_) => log::info!("Audio processed successfully!"),
@@ -57,6 +80,7 @@ pub fn run_transcript(audio_file: String) {
         let mut bufferf32: Vec<f32> = vec![0.0; 16000*120];
         let mut global_pos = 0usize;
         let VAD_FRAME_SIZE = 16000;
+        let sender_wrapper = SenderWrapper::new(text_tx);
         loop {
             match cons.peek_blocking(global_pos, &mut bufferf32[..VAD_FRAME_SIZE*3]) {
 
@@ -66,7 +90,7 @@ pub fn run_transcript(audio_file: String) {
                             global_pos += buf_size;
                             log::info!("Received {} samples", buf_size);
                             //(unsafe{ offline_stream_engine.vad_infer_buffer(buf, buf_size, false)}, false )
-                            let ret = unsafe{ww.infer_buffer(buf, buf_size)};
+                            let ret = unsafe{ww.infer_buffer(&sender_wrapper, buf, buf_size)};
                             log::info!("Processed {} samples: ret: {}", buf_size, ret);
                             ()
                         }
@@ -104,6 +128,11 @@ pub fn run_transcript(audio_file: String) {
         }
     });
 
+
+
+    for text in text_rx {
+        log::info!("Received text: {}", text);
+    }
     t1.join().unwrap();
     t2.join().unwrap();
 }

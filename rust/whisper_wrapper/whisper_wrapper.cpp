@@ -4,6 +4,7 @@
 
 #include <thread>
 #include "whisper_wrapper.h"
+#include "whispercpp/rust/src/lib.rs.h"
 
 namespace WhisperRust {
 
@@ -23,6 +24,7 @@ namespace WhisperRust {
 
     struct print_user_data {
         int progress;
+        const SenderWrapper &wrapper;
     };
 
     void whisper_print_progress_callback(struct whisper_context * /*ctx*/, struct whisper_state * /*state*/, int progress, void * user_data) {
@@ -45,19 +47,21 @@ namespace WhisperRust {
 
         if (s0 == 0) {
             printf("\n");
+            WhisperRust::send_text(((print_user_data*)user_data)->wrapper, std::string("\n"));
         }
 
         for (int i = s0; i < n_segments; i++) {
-            printf("[%s --> %s]  ", to_timestamp(t0).c_str(), to_timestamp(t1).c_str());
+            //printf("[%s --> %s]  ", to_timestamp(t0).c_str(), to_timestamp(t1).c_str());
 
             const char * text = whisper_full_get_segment_text(ctx, i);
             printf("%s", text);
+            WhisperRust::send_text(((print_user_data*)user_data)->wrapper, std::string(text));
 
             fflush(stdout);
         }
     }
 
-    int32_t WhisperWrapper::infer_buffer(const float *buffer, size_t buffer_size) const {
+    int32_t WhisperWrapper::infer_buffer(const SenderWrapper& sender, const float *buffer, size_t buffer_size) const {
         whisper_full_params wparams = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
 
         wparams.strategy = WHISPER_SAMPLING_BEAM_SEARCH;
@@ -93,7 +97,7 @@ namespace WhisperRust {
 
         wparams.no_timestamps    = true;
 
-        print_user_data user_data = {0};
+        print_user_data user_data = {0, sender};
 
         // this callback is called on each new segment
         if (!wparams.print_realtime) {
